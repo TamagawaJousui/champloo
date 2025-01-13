@@ -15,7 +15,7 @@ const root = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/">
       <Route index element={<TopPage />} />
-      <Route element={<Layout />}>
+      <Route path="/:tab" element={<Layout />}>
         <Route path="collage-select" element={<CollageSelect />} />
         <Route path="work-create" element={<WorkCreate />} />
         <Route path="work-list" element={<WorkList />} />
