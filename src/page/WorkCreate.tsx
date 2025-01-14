@@ -1,7 +1,8 @@
-import { storage } from "@/firebase/firebse";
+import { storage } from "@/firebase/firebase";
 import { ref, getDownloadURL } from "firebase/storage";
 import { useSelectedCollageStore } from "@/stores/selectedCollageStore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import * as fabric from "fabric";
 
 const getCollageFromSelectedCollage = async (collagePath: Set<string>) => {
   const collageUrls = await Promise.all(
@@ -16,9 +17,9 @@ const getCollageFromSelectedCollage = async (collagePath: Set<string>) => {
       };
     })
   );
-  console.log(collageUrls);
   return collageUrls;
 };
+
 export default function WorkCreate() {
   const { selectedCollage } = useSelectedCollageStore();
   const [collageList, setCollageList] = useState<
@@ -33,14 +34,65 @@ export default function WorkCreate() {
 
     fetchCollages();
   }, [selectedCollage]);
+
+  const canvasEl = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!canvasEl.current || collageList.length === 0) {
+      return;
+    }
+    const options = {
+      width: window.innerWidth,
+      height:
+        window.innerHeight -
+        3 * parseFloat(getComputedStyle(document.documentElement).fontSize),
+    };
+    const canvas = new fabric.Canvas(canvasEl.current, options);
+
+    const paper = new Image();
+    paper.onload = () => {
+      const fabricBackground = new fabric.FabricImage(paper);
+      const scaleX = window.innerWidth / paper.width;
+      const scaleY = canvas.height! / paper.height;
+      const scale = Math.max(scaleX, scaleY);
+
+      fabricBackground.scale(scale);
+      fabricBackground.set({
+        selectable: false,
+        evented: false,
+        left: canvas.width! / 2,
+        top: canvas.height! / 2,
+        originX: "center",
+        originY: "center",
+      });
+      canvas.add(fabricBackground);
+    };
+    paper.src = "/paper.jpg";
+
+    collageList.map((item) => {
+      const img = new Image();
+      img.onload = () => {
+        const fabricImg = new fabric.FabricImage(img);
+        fabricImg.scaleToWidth(150 * (Math.random() + 1));
+
+        fabricImg.set({
+          left: Math.random() * (canvas.width! - 150),
+          top: Math.random() * (canvas.height! - 150),
+        });
+
+        canvas.add(fabricImg);
+      };
+      img.src = item.url;
+    });
+
+    return () => {
+      canvas.dispose();
+    };
+  }, [collageList]);
   return (
     <>
       <main>
-        {collageList.map((collage) => (
-          <div key={collage.name}>
-            <img src={collage.url} alt={collage.name} className="size-32" />
-          </div>
-        ))}
+        <canvas ref={canvasEl} />
       </main>
     </>
   );

@@ -1,4 +1,4 @@
-import { storage } from "@/firebase/firebse";
+import { storage } from "@/firebase/firebase";
 import { ref, listAll, getDownloadURL, uploadBytes } from "firebase/storage";
 import { useIdentityStore } from "@/stores/userIdentityStore";
 import { useState, useEffect } from "react";
@@ -152,7 +152,6 @@ export default function CollageSelect() {
                       newSet[newSet.has(collage.path) ? "delete" : "add"](
                         collage.path
                       );
-                      console.log(newSet);
                       return newSet;
                     })
                   }
@@ -196,7 +195,6 @@ export default function CollageSelect() {
                       newSet[newSet.has(collage.path) ? "delete" : "add"](
                         collage.path
                       );
-                      console.log(newSet);
                       return newSet;
                     })
                   }
