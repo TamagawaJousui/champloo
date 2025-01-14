@@ -1,7 +1,7 @@
 import { storage } from "@/firebase/firebase";
 import { ref, listAll, getDownloadURL, uploadBytes } from "firebase/storage";
 import { useIdentityStore } from "@/stores/userIdentityStore";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { useSelectedCollageStore } from "@/stores/selectedCollageStore";
@@ -29,7 +29,7 @@ const getDefaultCollageList = async () => {
 
 // User Collage List
 const getUserCollageList = async (visitorId: string) => {
-  const visitorFolderRef = ref(storage, visitorId);
+  const visitorFolderRef = ref(storage, `collages/${visitorId}`);
   const res = await listAll(visitorFolderRef);
 
   const fileUrls = await Promise.all(
@@ -48,7 +48,7 @@ const getUserCollageList = async (visitorId: string) => {
 
 const uploadCollage = async (visitorId: string, collage: File) => {
   // Get reference to visitor's folder
-  const visitorFolderRef = ref(storage, visitorId);
+  const visitorFolderRef = ref(storage, `collages/${visitorId}`);
 
   // Get existing files in the folder
   const fileList = await listAll(visitorFolderRef);
@@ -58,7 +58,7 @@ const uploadCollage = async (visitorId: string, collage: File) => {
   const fileNumber = nextNumber.toString().padStart(3, "0");
 
   // Create reference with numbered filename
-  const storageRef = ref(storage, `${visitorId}/${fileNumber}.png`);
+  const storageRef = ref(storage, `collages/${visitorId}/${fileNumber}.png`);
   const res = await uploadBytes(storageRef, collage);
   const url = await getDownloadURL(res.ref); // 获取新上传文件的URL
   return {
@@ -141,9 +141,40 @@ export default function CollageSelect() {
   const [userCollageList, setUserCollageList] = useState<
     Array<{ name: string; url: string; path: string }>
   >([]);
+  const [otherCollageList, setOtherCollageList] = useState<
+    Array<{ name: string; url: string; path: string }>
+  >([]);
   const [selectedCollageList, setSelectedCollageList] =
     useState<Set<string>>(selectedCollage);
   const navigate = useNavigate();
+
+  // Other Collage List
+  const getOtherCollageList = useCallback(async () => {
+    const collageFolderRef = ref(storage, "collages");
+    const res = await listAll(collageFolderRef);
+
+    // 过滤掉当前访问者的文件夹，并获取其他文件夹中的作品
+    const otherFoldersResults = await Promise.all(
+      res.prefixes
+        .filter((folder) => folder.name !== visitorId)
+        .map((folder) => listAll(folder))
+    );
+
+    // 将所有作品的信息整合到一个数组中
+    const allFiles = await Promise.all(
+      otherFoldersResults.flatMap((folderResult) =>
+        folderResult.items.map(async (item) => {
+          const url = await getDownloadURL(item);
+          return {
+            name: item.name,
+            url: url,
+            path: item.fullPath,
+          };
+        })
+      )
+    );
+    return allFiles;
+  }, [visitorId]);
 
   const handleUploadCollage = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -176,16 +207,22 @@ export default function CollageSelect() {
       const collages = await getUserCollageList(visitorId);
       setUserCollageList(collages);
     };
+    const fetchOtherCollages = async () => {
+      const collages = await getOtherCollageList();
+      setOtherCollageList(collages);
+    };
 
     fetchCollages();
     fetchUserCollages();
-  }, [visitorId]);
+    fetchOtherCollages();
+  }, [visitorId, getOtherCollageList]);
 
   return (
     <>
       <Toaster />
       <main className="relative py-8 pl-24 pr-48">
         <button
+          disabled={selectedCollageList.size === 0}
           className={clsx(
             "fixed bottom-12 right-8 flex flex-col items-center justify-center whitespace-pre-wrap rounded-full px-12 py-2 text-white  transition-transform active:scale-95",
             selectedCollageList.size > 0 ? "bg-[#E8ACAC]" : "bg-[#E8ACAC]/50"
@@ -243,9 +280,9 @@ export default function CollageSelect() {
           他人のコラージュ
         </h2>
         <div className="flex flex-wrap gap-x-16 gap-y-12">
-          {defaultCollageList.map((collage) => (
+          {otherCollageList.concat(defaultCollageList).map((collage) => (
             <CollageItem
-              key={collage.name}
+              key={collage.path}
               collage={collage}
               isSelected={selectedCollageList.has(collage.path)}
               onToggle={toggleCollageSelection}
