@@ -1,5 +1,5 @@
 import SelectButton from "./CollageSelectButton";
-import { Collage } from "@/models/Collage";
+import { Collage } from "@/model/Collage";
 
 export default function CollageItem({
   collage,

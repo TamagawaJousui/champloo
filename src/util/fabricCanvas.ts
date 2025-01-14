@@ -1,5 +1,5 @@
 import * as fabric from "fabric";
-import { Collage } from "@/models/Collage";
+import { Collage } from "@/model/Collage";
 import { uploadWork } from "@/firebase/storage";
 
 export const initFabricCanvas = (canvas: fabric.Canvas, collageList: Collage[]) => {

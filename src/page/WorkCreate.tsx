@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import * as fabric from "fabric";
 import { Toaster } from "react-hot-toast";
 import { getCollageFromSelectedCollage } from "@/firebase/storage";
-import { Collage } from "@/models/Collage";
+import { Collage } from "@/model/Collage";
 import { initFabricCanvas } from "@/util/fabricCanvas";
 import { toastUploadWork } from "@/util/toast";
 

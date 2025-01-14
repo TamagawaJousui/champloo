@@ -10,7 +10,7 @@ import {
   getUserCollageList,
 } from "@/firebase/storage";
 import CollageItem from "@/component/CollageItem";
-import { Collage } from "@/models/Collage";
+import { Collage } from "@/model/Collage";
 import { toastUploadCollage } from "@/util/toast";
 
 export default function CollageSelect() {
