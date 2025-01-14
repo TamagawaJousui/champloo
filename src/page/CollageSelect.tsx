@@ -4,7 +4,7 @@ import { useIdentityStore } from "@/stores/userIdentityStore";
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router";
-
+import { useSelectedCollageStore } from "@/stores/selectedCollageStore";
 // Default Collage List
 const getDefaultCollageList = async () => {
   const elementsRef = ref(storage, "elements");
@@ -76,6 +76,7 @@ const toastUploadCollage = (visitorId: string, file: File) => {
 
 export default function CollageSelect() {
   const { visitorId } = useIdentityStore();
+  const { setSelectedCollage } = useSelectedCollageStore();
   const [defaultCollageList, setDefaultCollageList] = useState<
     Array<{ name: string; url: string; path: string }>
   >([]);
@@ -121,7 +122,10 @@ export default function CollageSelect() {
       <main className="relative py-8 pl-24 pr-48">
         <button
           className="fixed bottom-12 right-8 flex flex-col items-center justify-center whitespace-pre-wrap rounded-full bg-[#E8ACAC]/70 px-12 py-2 text-white  transition-transform active:scale-95"
-          onClick={() => navigate("/work-create")}
+          onClick={() => {
+            setSelectedCollage(selectedCollageList);
+            navigate("/work-create");
+          }}
         >
           <span className="text-2xl font-bold">次へ</span>
           <span className="font-serif">NEXT</span>
