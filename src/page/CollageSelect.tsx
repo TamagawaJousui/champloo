@@ -186,7 +186,10 @@ export default function CollageSelect() {
       <Toaster />
       <main className="relative py-8 pl-24 pr-48">
         <button
-          className="fixed bottom-12 right-8 flex flex-col items-center justify-center whitespace-pre-wrap rounded-full bg-[#E8ACAC]/70 px-12 py-2 text-white  transition-transform active:scale-95"
+          className={clsx(
+            "fixed bottom-12 right-8 flex flex-col items-center justify-center whitespace-pre-wrap rounded-full px-12 py-2 text-white  transition-transform active:scale-95",
+            selectedCollageList.size > 0 ? "bg-[#E8ACAC]" : "bg-[#E8ACAC]/50"
+          )}
           onClick={() => {
             setSelectedCollage(selectedCollageList);
             navigate("/work-create");
@@ -194,7 +197,14 @@ export default function CollageSelect() {
         >
           <span className="text-2xl font-bold">次へ</span>
           <span className="font-serif">NEXT</span>
-          <span className="absolute top-0 -translate-y-full font-bold text-[#D0BCBC]/80">
+          <span
+            className={clsx(
+              "absolute top-0 -translate-y-full font-bold",
+              selectedCollageList.size > 0
+                ? "text-[#D0BCBC]"
+                : "text-[#D0BCBC]/50"
+            )}
+          >
             {`${selectedCollageList.size}個を選んだ`}
           </span>
         </button>
