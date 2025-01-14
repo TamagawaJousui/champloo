@@ -129,7 +129,7 @@ export default function CollageSelect() {
         >
           <span className="text-2xl font-bold">次へ</span>
           <span className="font-serif">NEXT</span>
-          <span className="absolute top-0 -translate-y-full font-bold text-[#D0BCBC]/50">
+          <span className="absolute top-0 -translate-y-full font-bold text-[#D0BCBC]/80">
             {`${selectedCollageList.size}個を選んだ`}
           </span>
         </button>

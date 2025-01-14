@@ -78,6 +78,47 @@ export default function WorkCreate() {
         fabricImg.set({
           left: Math.random() * (canvas.width! - 150),
           top: Math.random() * (canvas.height! - 150),
+          borderColor: "#505050",
+          borderDashArray: [5, 5],
+          cornerStyle: "circle",
+          transparentCorners: false,
+          rotatingPointOffset: 0,
+        });
+
+        fabricImg.controls.tr.render = function (ctx, left, top) {
+          ctx.save();
+          ctx.fillStyle = "#5679CB";
+          ctx.strokeStyle = "#505050";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(left, top, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        fabricImg.controls.mtr.render = function (ctx, left, top) {
+          ctx.save();
+          ctx.fillStyle = "#FA1D49";
+          ctx.strokeStyle = "#505050";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(left, top, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        fabricImg.setControlsVisibility({
+          mt: false,
+          mb: false,
+          ml: false,
+          mr: false,
+          bl: false,
+          br: false,
+          tl: false,
+          tr: true,
+          mtr: true,
         });
 
         canvas.add(fabricImg);
