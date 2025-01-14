@@ -1,55 +1,37 @@
-import { storage } from "@/firebase/firebase";
-import { ref, getDownloadURL, uploadBytes, listAll } from "firebase/storage";
 import { useSelectedCollageStore } from "@/stores/selectedCollageStore";
 import { useIdentityStore } from "@/stores/userIdentityStore";
 import { useEffect, useRef, useState } from "react";
 import * as fabric from "fabric";
 import toast, { Toaster } from "react-hot-toast";
+import { getCollageFromSelectedCollage, uploadWork } from "@/firebase/storage";
+import { Collage } from "@/models/Collage";
 
-const getCollageFromSelectedCollage = async (collagePath: Set<string>) => {
-  const collageUrls = await Promise.all(
-    Array.from(collagePath).map(async (path) => {
-      const imgRef = ref(storage, path);
-      const url = await getDownloadURL(imgRef);
-      const name = path.split("/").pop() || "";
-      return {
-        name: name,
-        url: url,
-        path: path,
-      };
-    })
-  );
-  return collageUrls;
-};
+const saveCanvas = async (canvas: fabric.Canvas | null, visitorId: string) => {
+  if (!canvas) {
+    throw new Error("Canvas is null");
+  }
 
-const uploadWork = async (visitorId: string, work: Blob) => {
-  const visitorFolderRef = ref(storage, `works/${visitorId}`);
+  // Get data URL from Fabric.js canvas
+  const dataUrl = canvas.toDataURL({ multiplier: 1, format: "jpeg" });
 
-  // Get existing files in the folder
-  const fileList = await listAll(visitorFolderRef);
-  const nextNumber = fileList.items.length;
+  // Convert data URL to Blob
+  const blob = await fetch(dataUrl).then((res) => res.blob());
 
-  // Format the file number with leading zeros (000, 001, etc.)
-  const fileNumber = nextNumber.toString().padStart(3, "0");
-
-  // Create reference with numbered filename
-  const storageRef = ref(storage, `works/${visitorId}/${fileNumber}.jpeg`);
-  const res = await uploadBytes(storageRef, work);
-  const url = await getDownloadURL(res.ref);
-  return {
-    name: res.ref.name,
-    url: url,
-    path: `works/${visitorId}/${res.ref.name}`,
-  };
+  try {
+    return await uploadWork(visitorId, blob);
+  } catch (error) {
+    console.error("Error uploading:", error);
+    throw error;
+  }
 };
 
 export default function WorkCreate() {
-  const { selectedCollage } = useSelectedCollageStore();
-  const [collageList, setCollageList] = useState<
-    Array<{ name: string; url: string; path: string }>
-  >([]);
-  const [reArrangeCount, setReArrangeCount] = useState(0);
   const { visitorId } = useIdentityStore();
+  const { selectedCollage } = useSelectedCollageStore();
+
+  const [collageList, setCollageList] = useState<Collage[]>([]);
+  const [reArrangeCount, setReArrangeCount] = useState(0);
+
   useEffect(() => {
     const fetchCollages = async () => {
       const collages = await getCollageFromSelectedCollage(selectedCollage);
@@ -62,28 +44,8 @@ export default function WorkCreate() {
   const canvasEl = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
 
-  const saveCanvas = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    // Get data URL from Fabric.js canvas
-    const dataUrl = canvas.toDataURL({ multiplier: 1, format: "jpeg" });
-    console.log(dataUrl);
-
-    // Convert data URL to Blob
-    const blob = await fetch(dataUrl).then((res) => res.blob());
-
-    try {
-      const url = await uploadWork(visitorId, blob);
-      console.log("Uploaded successfully:", url);
-      return url;
-    } catch (error) {
-      console.error("Error uploading:", error);
-    }
-  };
-
   const toastUploadWork = () => {
-    toast.promise(saveCanvas(), {
+    toast.promise(saveCanvas(canvasRef.current, visitorId), {
       loading: "アップロード中...",
       success: (data) => `アップロード完了: ${data!.name}`,
       error: (error) => `アップロード失敗: ${error.toString()}`,

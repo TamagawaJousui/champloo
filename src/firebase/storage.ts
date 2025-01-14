@@ -5,7 +5,6 @@ import { ref, listAll, getDownloadURL, uploadBytes } from "firebase/storage";
 export const getDefaultCollageList = async () => {
   const elementsRef = ref(storage, "elements");
   const res = await listAll(elementsRef);
-  console.log(res.items.length);
 
   const fileUrls = await Promise.all(
     res.items.map(async (item) => {
@@ -13,7 +12,7 @@ export const getDefaultCollageList = async () => {
       return {
         name: item.name,
         url: url,
-        path: `elements/${item.name}`,
+        path: item.fullPath,
       };
     })
   );
@@ -32,7 +31,7 @@ export const getUserCollageList = async (visitorId: string) => {
       return {
         name: item.name,
         url: url,
-        path: `${visitorId}/${item.name}`,
+        path: item.fullPath,
       };
     })
   );
@@ -86,6 +85,45 @@ export const uploadCollage = async (visitorId: string, collage: File) => {
   return {
     name: res.ref.name,
     url: url,
-    path: `${visitorId}/${res.ref.name}`,
+    path: res.ref.fullPath,
+  };
+};
+
+export const getCollageFromSelectedCollage = async (
+  collagePath: Set<string>
+) => {
+  const collageUrls = await Promise.all(
+    Array.from(collagePath).map(async (path) => {
+      const imgRef = ref(storage, path);
+      const url = await getDownloadURL(imgRef);
+      const name = path.split("/").pop() || "";
+      return {
+        name: name,
+        url: url,
+        path: path,
+      };
+    })
+  );
+  return collageUrls;
+};
+
+export const uploadWork = async (visitorId: string, work: Blob) => {
+  const visitorFolderRef = ref(storage, `works/${visitorId}`);
+
+  // Get existing files in the folder
+  const fileList = await listAll(visitorFolderRef);
+  const nextNumber = fileList.items.length;
+
+  // Format the file number with leading zeros (000, 001, etc.)
+  const fileNumber = nextNumber.toString().padStart(3, "0");
+
+  // Create reference with numbered filename
+  const storageRef = ref(storage, `works/${visitorId}/${fileNumber}.jpeg`);
+  const res = await uploadBytes(storageRef, work);
+  const url = await getDownloadURL(res.ref);
+  return {
+    name: res.ref.name,
+    url: url,
+    path: res.ref.fullPath,
   };
 };

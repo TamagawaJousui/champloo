@@ -40,7 +40,7 @@ export default function CollageSelect() {
   ) => {
     const file = event.target.files?.[0];
     if (file) {
-      await toastUploadCollage(visitorId, file);
+      toastUploadCollage(visitorId, file);
       setTimeout(async () => {
         const newCollageList = await getUserCollageList(visitorId);
         setUserCollageList(newCollageList);
