@@ -76,6 +76,62 @@ const toastUploadCollage = (visitorId: string, file: File) => {
   });
 };
 
+// Add this new component
+const SelectButton = ({
+  isSelected,
+  onClick,
+}: {
+  isSelected: boolean;
+  onClick: () => void;
+}) => (
+  <div
+    className={clsx(
+      "size-5 cursor-pointer rounded-full border border-[#E79292] transition-colors",
+      isSelected ? "bg-[#E79292]" : "bg-white"
+    )}
+    onClick={onClick}
+  >
+    {isSelected && (
+      <svg
+        className="size-full scale-150 p-1 text-white"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+      >
+        <path d="M4 13l5 5L20 6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )}
+  </div>
+);
+
+// Add new CollageItem component
+const CollageItem = ({
+  collage,
+  isSelected,
+  onToggle,
+}: {
+  collage: { name: string; url: string; path: string };
+  isSelected: boolean;
+  onToggle: (path: string) => void;
+}) => (
+  <div key={collage.name}>
+    <img
+      src={collage.url}
+      alt={collage.name}
+      className="size-36 cursor-pointer"
+      onClick={() => onToggle(collage.path)}
+    />
+    <div className="flex items-center justify-between pt-3">
+      <p>{collage.name.replace(".png", "")}</p>
+      <SelectButton
+        isSelected={isSelected}
+        onClick={() => onToggle(collage.path)}
+      />
+    </div>
+  </div>
+);
+
 export default function CollageSelect() {
   const { visitorId } = useIdentityStore();
   const { selectedCollage, setSelectedCollage } = useSelectedCollageStore();
@@ -148,42 +204,12 @@ export default function CollageSelect() {
         </h2>
         <div className="relative flex flex-wrap gap-x-16 gap-y-12">
           {userCollageList.map((collage) => (
-            <div key={collage.name}>
-              <img
-                src={collage.url}
-                alt={collage.name}
-                className="size-36 cursor-pointer"
-                onClick={() => toggleCollageSelection(collage.path)}
-              />
-              <div className="flex items-center justify-between">
-                <p>{collage.name.replace(".png", "")}</p>
-                <div
-                  className={clsx(
-                    "size-5 cursor-pointer rounded-full border border-[#E79292] transition-colors",
-                    selectedCollageList.has(collage.path)
-                      ? "bg-[#E79292]"
-                      : "bg-white"
-                  )}
-                  onClick={() => toggleCollageSelection(collage.path)}
-                >
-                  {selectedCollageList.has(collage.path) && (
-                    <svg
-                      className="size-full scale-150 p-1 text-white"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                    >
-                      <path
-                        d="M4 13l5 5L20 6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </div>
-            </div>
+            <CollageItem
+              key={collage.name}
+              collage={collage}
+              isSelected={selectedCollageList.has(collage.path)}
+              onToggle={toggleCollageSelection}
+            />
           ))}
           <label
             htmlFor="upload-collage"
@@ -208,22 +234,12 @@ export default function CollageSelect() {
         </h2>
         <div className="flex flex-wrap gap-x-16 gap-y-12">
           {defaultCollageList.map((collage) => (
-            <div key={collage.name}>
-              <img
-                src={collage.url}
-                alt={collage.name}
-                className="size-36 cursor-pointer"
-                onClick={() => toggleCollageSelection(collage.path)}
-              />
-              <div className="flex items-center justify-between">
-                <p>{collage.name.replace(".png", "")}</p>
-                <input
-                  type="checkbox"
-                  checked={selectedCollageList.has(collage.path)}
-                  onChange={() => toggleCollageSelection(collage.path)}
-                />
-              </div>
-            </div>
+            <CollageItem
+              key={collage.name}
+              collage={collage}
+              isSelected={selectedCollageList.has(collage.path)}
+              onToggle={toggleCollageSelection}
+            />
           ))}
         </div>
       </main>
