@@ -125,3 +125,48 @@ export const uploadWork = async (visitorId: string, work: Blob) => {
     path: res.ref.fullPath,
   };
 };
+
+// User Work List
+export const getUserWorkList = async (visitorId: string) => {
+  const visitorFolderRef = ref(storage, `works/${visitorId}`);
+  const res = await listAll(visitorFolderRef);
+
+  const works = await Promise.all(
+    res.items.map(async (item) => {
+      const url = await getDownloadURL(item);
+      return {
+        name: item.name,
+        url: url,
+        path: item.fullPath,
+      };
+    })
+  );
+
+  return works;
+};
+
+export const getOtherWorkList = async (visitorId: string) => {
+  const workFolderRef = ref(storage, `works`);
+  const res = await listAll(workFolderRef);
+
+  const otherFoldersResults = await Promise.all(
+    res.prefixes
+      .filter((folder) => folder.name !== visitorId)
+      .map((folder) => listAll(folder))
+  );
+
+  const works = await Promise.all(
+    otherFoldersResults.flatMap((folderResult) =>
+      folderResult.items.map(async (item) => {
+        const url = await getDownloadURL(item);
+        return {
+          name: item.name,
+          url: url,
+          path: item.fullPath,
+        };
+      })
+    )
+  );
+
+  return works;
+};
