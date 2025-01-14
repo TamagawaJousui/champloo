@@ -1,72 +1,17 @@
-import { storage } from "@/firebase/firebase";
-import { ref, listAll, getDownloadURL, uploadBytes } from "firebase/storage";
 import { useIdentityStore } from "@/stores/userIdentityStore";
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { useSelectedCollageStore } from "@/stores/selectedCollageStore";
 import clsx from "clsx";
-
-// Default Collage List
-const getDefaultCollageList = async () => {
-  const elementsRef = ref(storage, "elements");
-  const res = await listAll(elementsRef);
-  console.log(res.items.length);
-
-  const fileUrls = await Promise.all(
-    res.items.map(async (item) => {
-      const url = await getDownloadURL(item);
-      return {
-        name: item.name,
-        url: url,
-        path: `elements/${item.name}`,
-      };
-    })
-  );
-
-  return fileUrls;
-};
-
-// User Collage List
-const getUserCollageList = async (visitorId: string) => {
-  const visitorFolderRef = ref(storage, `collages/${visitorId}`);
-  const res = await listAll(visitorFolderRef);
-
-  const fileUrls = await Promise.all(
-    res.items.map(async (item) => {
-      const url = await getDownloadURL(item);
-      return {
-        name: item.name,
-        url: url,
-        path: `${visitorId}/${item.name}`,
-      };
-    })
-  );
-
-  return fileUrls;
-};
-
-const uploadCollage = async (visitorId: string, collage: File) => {
-  // Get reference to visitor's folder
-  const visitorFolderRef = ref(storage, `collages/${visitorId}`);
-
-  // Get existing files in the folder
-  const fileList = await listAll(visitorFolderRef);
-  const nextNumber = fileList.items.length;
-
-  // Format the file number with leading zeros (000, 001, etc.)
-  const fileNumber = nextNumber.toString().padStart(3, "0");
-
-  // Create reference with numbered filename
-  const storageRef = ref(storage, `collages/${visitorId}/${fileNumber}.png`);
-  const res = await uploadBytes(storageRef, collage);
-  const url = await getDownloadURL(res.ref); // 获取新上传文件的URL
-  return {
-    name: res.ref.name,
-    url: url,
-    path: `${visitorId}/${res.ref.name}`,
-  };
-};
+import {
+  getDefaultCollageList,
+  getOtherCollageList,
+  getUserCollageList,
+  uploadCollage,
+} from "@/firebase/storage";
+import CollageItem from "@/component/CollageItem";
+import { Collage } from "@/models/Collage";
 
 const toastUploadCollage = (visitorId: string, file: File) => {
   toast.promise(uploadCollage(visitorId, file), {
@@ -76,105 +21,19 @@ const toastUploadCollage = (visitorId: string, file: File) => {
   });
 };
 
-// Add this new component
-const SelectButton = ({
-  isSelected,
-  onClick,
-}: {
-  isSelected: boolean;
-  onClick: () => void;
-}) => (
-  <div
-    className={clsx(
-      "size-5 cursor-pointer rounded-full border border-[#E79292] transition-colors",
-      isSelected ? "bg-[#E79292]" : "bg-white"
-    )}
-    onClick={onClick}
-  >
-    {isSelected && (
-      <svg
-        className="size-full scale-150 p-1 text-white"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-      >
-        <path d="M4 13l5 5L20 6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    )}
-  </div>
-);
-
-// Add new CollageItem component
-const CollageItem = ({
-  collage,
-  isSelected,
-  onToggle,
-}: {
-  collage: { name: string; url: string; path: string };
-  isSelected: boolean;
-  onToggle: (path: string) => void;
-}) => (
-  <div key={collage.name}>
-    <img
-      src={collage.url}
-      alt={collage.name}
-      className="size-36 cursor-pointer"
-      onClick={() => onToggle(collage.path)}
-    />
-    <div className="flex items-center justify-between pt-3">
-      <p>{collage.name.replace(".png", "")}</p>
-      <SelectButton
-        isSelected={isSelected}
-        onClick={() => onToggle(collage.path)}
-      />
-    </div>
-  </div>
-);
-
 export default function CollageSelect() {
   const { visitorId } = useIdentityStore();
+
   const { selectedCollage, setSelectedCollage } = useSelectedCollageStore();
-  const [defaultCollageList, setDefaultCollageList] = useState<
-    Array<{ name: string; url: string; path: string }>
-  >([]);
-  const [userCollageList, setUserCollageList] = useState<
-    Array<{ name: string; url: string; path: string }>
-  >([]);
-  const [otherCollageList, setOtherCollageList] = useState<
-    Array<{ name: string; url: string; path: string }>
-  >([]);
+
+  const [defaultCollageList, setDefaultCollageList] = useState<Collage[]>([]);
+  const [userCollageList, setUserCollageList] = useState<Collage[]>([]);
+  const [otherCollageList, setOtherCollageList] = useState<Collage[]>([]);
+
   const [selectedCollageList, setSelectedCollageList] =
     useState<Set<string>>(selectedCollage);
+
   const navigate = useNavigate();
-
-  // Other Collage List
-  const getOtherCollageList = useCallback(async () => {
-    const collageFolderRef = ref(storage, "collages");
-    const res = await listAll(collageFolderRef);
-
-    // 过滤掉当前访问者的文件夹，并获取其他文件夹中的作品
-    const otherFoldersResults = await Promise.all(
-      res.prefixes
-        .filter((folder) => folder.name !== visitorId)
-        .map((folder) => listAll(folder))
-    );
-
-    // 将所有作品的信息整合到一个数组中
-    const allFiles = await Promise.all(
-      otherFoldersResults.flatMap((folderResult) =>
-        folderResult.items.map(async (item) => {
-          const url = await getDownloadURL(item);
-          return {
-            name: item.name,
-            url: url,
-            path: item.fullPath,
-          };
-        })
-      )
-    );
-    return allFiles;
-  }, [visitorId]);
 
   const handleUploadCollage = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -198,24 +57,25 @@ export default function CollageSelect() {
   };
 
   useEffect(() => {
-    const fetchCollages = async () => {
-      const collages = await getDefaultCollageList();
-      setDefaultCollageList(collages);
+    const fetchAllCollages = async () => {
+      try {
+        const [defaultCollages, userCollages, otherCollages] =
+          await Promise.all([
+            getDefaultCollageList(),
+            getUserCollageList(visitorId),
+            getOtherCollageList(visitorId),
+          ]);
+
+        setDefaultCollageList(defaultCollages);
+        setUserCollageList(userCollages);
+        setOtherCollageList(otherCollages);
+      } catch (error) {
+        console.error("Failed to fetch collages:", error);
+      }
     };
 
-    const fetchUserCollages = async () => {
-      const collages = await getUserCollageList(visitorId);
-      setUserCollageList(collages);
-    };
-    const fetchOtherCollages = async () => {
-      const collages = await getOtherCollageList();
-      setOtherCollageList(collages);
-    };
-
-    fetchCollages();
-    fetchUserCollages();
-    fetchOtherCollages();
-  }, [visitorId, getOtherCollageList]);
+    fetchAllCollages();
+  }, [visitorId]);
 
   return (
     <>
@@ -280,7 +140,16 @@ export default function CollageSelect() {
           他人のコラージュ
         </h2>
         <div className="flex flex-wrap gap-x-16 gap-y-12">
-          {otherCollageList.concat(defaultCollageList).map((collage) => (
+          {otherCollageList.map((collage) => (
+            <CollageItem
+              key={collage.path}
+              collage={collage}
+              prefix={visitorId.slice(0, 4)}
+              isSelected={selectedCollageList.has(collage.path)}
+              onToggle={toggleCollageSelection}
+            />
+          ))}
+          {defaultCollageList.map((collage) => (
             <CollageItem
               key={collage.path}
               collage={collage}
