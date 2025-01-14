@@ -6,7 +6,7 @@ export const getDefaultCollageList = async () => {
   const elementsRef = ref(storage, "elements");
   const res = await listAll(elementsRef);
 
-  const fileUrls = await Promise.all(
+  const collages = await Promise.all(
     res.items.map(async (item) => {
       const url = await getDownloadURL(item);
       return {
@@ -17,7 +17,7 @@ export const getDefaultCollageList = async () => {
     })
   );
 
-  return fileUrls;
+  return collages;
 };
 
 // User Collage List
@@ -25,7 +25,7 @@ export const getUserCollageList = async (visitorId: string) => {
   const visitorFolderRef = ref(storage, `collages/${visitorId}`);
   const res = await listAll(visitorFolderRef);
 
-  const fileUrls = await Promise.all(
+  const collages = await Promise.all(
     res.items.map(async (item) => {
       const url = await getDownloadURL(item);
       return {
@@ -36,7 +36,7 @@ export const getUserCollageList = async (visitorId: string) => {
     })
   );
 
-  return fileUrls;
+  return collages;
 };
 
 // Other Collage List
@@ -44,15 +44,13 @@ export const getOtherCollageList = async (visitorId: string) => {
   const collageFolderRef = ref(storage, "collages");
   const res = await listAll(collageFolderRef);
 
-  // 过滤掉当前访问者的文件夹，并获取其他文件夹中的作品
   const otherFoldersResults = await Promise.all(
     res.prefixes
       .filter((folder) => folder.name !== visitorId)
       .map((folder) => listAll(folder))
   );
 
-  // 将所有作品的信息整合到一个数组中
-  const allFiles = await Promise.all(
+  const collages = await Promise.all(
     otherFoldersResults.flatMap((folderResult) =>
       folderResult.items.map(async (item) => {
         const url = await getDownloadURL(item);
@@ -64,7 +62,7 @@ export const getOtherCollageList = async (visitorId: string) => {
       })
     )
   );
-  return allFiles;
+  return collages;
 };
 
 export const uploadCollage = async (visitorId: string, collage: File) => {
