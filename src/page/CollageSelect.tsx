@@ -1,25 +1,17 @@
-import { useIdentityStore } from "@/stores/userIdentityStore";
+import { useIdentityStore } from "@/store/userIdentityStore";
 import { useEffect, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router";
-import { useSelectedCollageStore } from "@/stores/selectedCollageStore";
+import { useSelectedCollageStore } from "@/store/selectedCollageStore";
 import clsx from "clsx";
 import {
   getDefaultCollageList,
   getOtherCollageList,
   getUserCollageList,
-  uploadCollage,
 } from "@/firebase/storage";
 import CollageItem from "@/component/CollageItem";
 import { Collage } from "@/models/Collage";
-
-const toastUploadCollage = (visitorId: string, file: File) => {
-  toast.promise(uploadCollage(visitorId, file), {
-    loading: "アップロード中...",
-    success: (data) => `アップロード完了: ${data.name}`,
-    error: (error) => `アップロード失敗: ${error.toString()}`,
-  });
-};
+import { toastUploadCollage } from "@/util/toast";
 
 export default function CollageSelect() {
   const { visitorId } = useIdentityStore();
@@ -144,7 +136,7 @@ export default function CollageSelect() {
             <CollageItem
               key={collage.path}
               collage={collage}
-              prefix={visitorId.slice(0, 4)}
+              prefix={collage.path.split("/")[1].slice(0, 4)}
               isSelected={selectedCollageList.has(collage.path)}
               onToggle={toggleCollageSelection}
             />

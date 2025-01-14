@@ -1,6 +1,6 @@
 import { storage } from "@/firebase/firebase";
 import { ref, listAll, getDownloadURL } from "firebase/storage";
-import { useIdentityStore } from "@/stores/userIdentityStore";
+import { useIdentityStore } from "@/store/userIdentityStore";
 import { useState, useEffect } from "react";
 
 // User Work List
