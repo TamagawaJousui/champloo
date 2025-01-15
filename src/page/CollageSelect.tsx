@@ -1,26 +1,32 @@
 import { useIdentityStore } from "@/store/userIdentityStore";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { useSelectedCollageStore } from "@/store/selectedCollageStore";
 import clsx from "clsx";
-import {
-  getDefaultCollageList,
-  getOtherCollageList,
-  getUserCollageList,
-} from "@/firebase/storage";
 import CollageItem from "@/component/CollageItem";
-import { Collage } from "@/model/Collage";
 import { toastUploadCollage } from "@/util/toast";
+import {
+  useDefaultCollageList,
+  useUserCollageList,
+  useOtherCollageList,
+} from "@/hooks/useStorage";
+import LoadingSpinner from "@/component/LoadingSpinner";
 
 export default function CollageSelect() {
   const { visitorId } = useIdentityStore();
 
   const { selectedCollage, setSelectedCollage } = useSelectedCollageStore();
 
-  const [defaultCollageList, setDefaultCollageList] = useState<Collage[]>([]);
-  const [userCollageList, setUserCollageList] = useState<Collage[]>([]);
-  const [otherCollageList, setOtherCollageList] = useState<Collage[]>([]);
+  const { data: defaultCollageList, isLoading: isDefaultCollageListLoading } =
+    useDefaultCollageList();
+  const {
+    data: userCollageList,
+    isLoading: isUserCollageListLoading,
+    mutate: mutateUserCollageList,
+  } = useUserCollageList(visitorId);
+  const { data: otherCollageList, isLoading: isOtherCollageListLoading } =
+    useOtherCollageList(visitorId);
 
   const [selectedCollageList, setSelectedCollageList] =
     useState<Set<string>>(selectedCollage);
@@ -32,11 +38,33 @@ export default function CollageSelect() {
   ) => {
     const file = event.target.files?.[0];
     if (file) {
-      toastUploadCollage(visitorId, file);
-      setTimeout(async () => {
-        const newCollageList = await getUserCollageList(visitorId);
-        setUserCollageList(newCollageList);
-      }, 3000);
+      const tempUrl = URL.createObjectURL(file);
+      const tempFileName = file.name.slice(0, 4);
+
+      mutateUserCollageList(
+        userCollageList
+          ? [
+              ...userCollageList,
+              {
+                name: tempFileName,
+                path: `users/${visitorId}/${tempFileName}`,
+                url: tempUrl,
+              },
+            ]
+          : [
+              {
+                name: tempFileName,
+                path: `users/${visitorId}/${tempFileName}`,
+                url: tempUrl,
+              },
+            ],
+        false
+      );
+
+      await toastUploadCollage(visitorId, file);
+      await mutateUserCollageList();
+
+      URL.revokeObjectURL(tempUrl);
     }
   };
 
@@ -47,27 +75,6 @@ export default function CollageSelect() {
       return newSet;
     });
   };
-
-  useEffect(() => {
-    const fetchAllCollages = async () => {
-      try {
-        const [defaultCollages, userCollages, otherCollages] =
-          await Promise.all([
-            getDefaultCollageList(),
-            getUserCollageList(visitorId),
-            getOtherCollageList(visitorId),
-          ]);
-
-        setDefaultCollageList(defaultCollages);
-        setUserCollageList(userCollages);
-        setOtherCollageList(otherCollages);
-      } catch (error) {
-        console.error("Failed to fetch collages:", error);
-      }
-    };
-
-    fetchAllCollages();
-  }, [visitorId]);
 
   return (
     <>
@@ -102,7 +109,8 @@ export default function CollageSelect() {
           自分のコラージュ
         </h2>
         <div className="relative flex flex-wrap gap-x-16 gap-y-12">
-          {userCollageList.map((collage) => (
+          {isUserCollageListLoading && <LoadingSpinner />}
+          {userCollageList?.map((collage) => (
             <CollageItem
               key={collage.name}
               collage={collage}
@@ -132,7 +140,10 @@ export default function CollageSelect() {
           他人のコラージュ
         </h2>
         <div className="flex flex-wrap gap-x-16 gap-y-12">
-          {otherCollageList.map((collage) => (
+          {(isOtherCollageListLoading || isDefaultCollageListLoading) && (
+            <LoadingSpinner />
+          )}
+          {otherCollageList?.map((collage) => (
             <CollageItem
               key={collage.path}
               collage={collage}
@@ -141,7 +152,7 @@ export default function CollageSelect() {
               onToggle={toggleCollageSelection}
             />
           ))}
-          {defaultCollageList.map((collage) => (
+          {defaultCollageList?.map((collage) => (
             <CollageItem
               key={collage.path}
               collage={collage}
