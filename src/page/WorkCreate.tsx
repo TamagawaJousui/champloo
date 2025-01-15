@@ -3,8 +3,7 @@ import { useIdentityStore } from "@/store/userIdentityStore";
 import { useEffect, useRef, useState } from "react";
 import * as fabric from "fabric";
 import { Toaster } from "react-hot-toast";
-import { getCollageFromSelectedCollage } from "@/firebase/storage";
-import { Collage } from "@/model/Collage";
+import { useSelectedCollages } from "@/hooks/useStorage";
 import { initFabricCanvas } from "@/util/fabricCanvas";
 import { toastUploadWork } from "@/util/toast";
 
@@ -12,23 +11,15 @@ export default function WorkCreate() {
   const { visitorId } = useIdentityStore();
   const { selectedCollage } = useSelectedCollageStore();
 
-  const [collageList, setCollageList] = useState<Collage[]>([]);
+  const { data: collageList, isLoading: isCollageListLoading } =
+    useSelectedCollages(selectedCollage);
   const [reArrangeCount, setReArrangeCount] = useState(0);
-
-  useEffect(() => {
-    const fetchCollages = async () => {
-      const collages = await getCollageFromSelectedCollage(selectedCollage);
-      setCollageList(collages);
-    };
-
-    fetchCollages();
-  }, [selectedCollage]);
 
   const canvasEl = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
 
   useEffect(() => {
-    if (!canvasEl.current || collageList.length === 0) {
+    if (!canvasEl.current || !collageList) {
       return;
     }
     const options = {
@@ -68,6 +59,9 @@ export default function WorkCreate() {
             }}
           >
             💾
+          </div>
+          <div className="animate-spin select-none text-4xl">
+            {isCollageListLoading && "⏳"}
           </div>
         </div>
       </main>
