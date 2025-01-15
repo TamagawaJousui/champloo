@@ -1,6 +1,4 @@
 import { useIdentityStore } from "@/store/userIdentityStore";
-import { useEffect } from "react";
-import { getUserWorkList, getOtherWorkList } from "@/firebase/storage";
 import WorkItem from "@/component/WorkItem";
 import { useUserWorkList, useOtherWorkList } from "@/hooks/useStorage";
 import LoadingSpinner from "@/component/LoadingSpinner";
