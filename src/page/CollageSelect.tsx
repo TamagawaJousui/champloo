@@ -28,8 +28,9 @@ export default function CollageSelect() {
   const { data: otherCollageList, isLoading: isOtherCollageListLoading } =
     useOtherCollageList(visitorId);
 
-  const [selectedCollageList, setSelectedCollageList] =
-    useState<Set<string>>(selectedCollage);
+  const [selectedCollageList, setSelectedCollageList] = useState(
+    new Set(selectedCollage.keys())
+  );
 
   const navigate = useNavigate();
 
@@ -80,6 +81,7 @@ export default function CollageSelect() {
     <>
       <Toaster />
       <main className="relative py-8 pl-24 pr-48">
+        {/* Next Button */}
         <button
           disabled={selectedCollageList.size === 0}
           className={clsx(
@@ -104,6 +106,8 @@ export default function CollageSelect() {
             {`${selectedCollageList.size}個を選んだ`}
           </span>
         </button>
+
+        {/* Collage List */}
         <h1 className="text-2xl font-bold">コラージュリスト</h1>
         <h2 className="pb-4 pt-12 text-xl font-bold text-[#AE8A91]">
           自分のコラージュ
@@ -118,6 +122,7 @@ export default function CollageSelect() {
               onToggle={toggleCollageSelection}
             />
           ))}
+          {/* Upload Collage */}
           <label
             htmlFor="upload-collage"
             className="flex size-36 items-center justify-center"
@@ -136,6 +141,7 @@ export default function CollageSelect() {
           </label>
         </div>
 
+        {/* Other Collage List */}
         <h2 className="pb-4 pt-12 text-xl font-bold text-[#AE8A91]">
           他人のコラージュ
         </h2>
@@ -152,6 +158,7 @@ export default function CollageSelect() {
               onToggle={toggleCollageSelection}
             />
           ))}
+          {/* Default Collage List */}
           {defaultCollageList?.map((collage) => (
             <CollageItem
               key={collage.path}

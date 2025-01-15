@@ -1,8 +1,12 @@
 import * as fabric from "fabric";
 import { Collage } from "@/model/Collage";
 import { uploadWork } from "@/firebase/storage";
+import { useSelectedCollageStore } from "@/store/selectedCollageStore";
 
-export const initFabricCanvas = (canvas: fabric.Canvas, collageList: Collage[]) => {
+export const initFabricCanvas = (
+  canvas: fabric.Canvas,
+  collageList: Collage[]
+) => {
   const paper = new Image();
   paper.crossOrigin = "anonymous";
   paper.onload = () => {
@@ -24,21 +28,32 @@ export const initFabricCanvas = (canvas: fabric.Canvas, collageList: Collage[]) 
   };
   paper.src = "/paper.jpg";
 
+  const selectedCollage = useSelectedCollageStore.getState().selectedCollage;
+
   collageList.map((item) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
       const fabricImg = new fabric.FabricImage(img);
-      fabricImg.scaleToWidth(150 * (Math.random() + 1));
+      fabricImg.scaleToWidth(
+        150 * ((selectedCollage.get(item.path)?.scale ?? Math.random()) + 0.5)
+      );
 
       fabricImg.set({
-        left: Math.random() * (canvas.width! - 150),
-        top: Math.random() * (canvas.height! - 150),
+        left:
+          (selectedCollage.get(item.path)?.x ?? Math.random()) *
+          (canvas.width! - 150),
+        top:
+          (selectedCollage.get(item.path)?.y ?? Math.random()) *
+          (canvas.height! - 150),
         borderColor: "#505050",
         borderDashArray: [5, 5],
         cornerStyle: "circle",
         transparentCorners: false,
         rotatingPointOffset: 0,
+        data: {
+          path: item.path,
+        },
       });
 
       fabricImg.controls.tr.render = function (ctx, left, top) {
@@ -83,23 +98,24 @@ export const initFabricCanvas = (canvas: fabric.Canvas, collageList: Collage[]) 
   });
 };
 
+export const saveCanvas = async (
+  canvas: fabric.Canvas | null,
+  visitorId: string
+) => {
+  if (!canvas) {
+    throw new Error("Canvas is null");
+  }
 
+  // Get data URL from Fabric.js canvas
+  const dataUrl = canvas.toDataURL({ multiplier: 1, format: "jpeg" });
 
-export const saveCanvas = async (canvas: fabric.Canvas | null, visitorId: string) => {
-    if (!canvas) {
-      throw new Error("Canvas is null");
-    }
-  
-    // Get data URL from Fabric.js canvas
-    const dataUrl = canvas.toDataURL({ multiplier: 1, format: "jpeg" });
-  
-    // Convert data URL to Blob
-    const blob = await fetch(dataUrl).then((res) => res.blob());
-  
-    try {
-      return await uploadWork(visitorId, blob);
-    } catch (error) {
-      console.error("Error uploading:", error);
-      throw error;
-    }
-  };
+  // Convert data URL to Blob
+  const blob = await fetch(dataUrl).then((res) => res.blob());
+
+  try {
+    return await uploadWork(visitorId, blob);
+  } catch (error) {
+    console.error("Error uploading:", error);
+    throw error;
+  }
+};

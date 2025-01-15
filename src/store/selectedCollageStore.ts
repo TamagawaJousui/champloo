@@ -1,14 +1,50 @@
 import { create } from "zustand";
 
-interface SelectedCollageState {
-  selectedCollage: Set<string>;
-  setSelectedCollage: (newSet: Set<string>) => void;
+export interface ImagePosition {
+  x: number;
+  y: number;
+  scale: number;
 }
 
-export const useSelectedCollageStore = create<SelectedCollageState>((set) => ({
-  selectedCollage: new Set<string>(),
-  setSelectedCollage: (newSet: Set<string>) => {
-    set({ selectedCollage: new Set(newSet) });
-  },
-}));
+interface SelectedCollageState {
+  selectedCollage: Map<string, ImagePosition>;
+  setSelectedCollage: (items: Set<string>) => void;
+  regenerateAllPositions: () => void;
+}
 
+const generateImagePosition = (): ImagePosition => ({
+  x: Math.random(),
+  y: Math.random(),
+  scale: Math.random() + 0.5,
+});
+
+export const useSelectedCollageStore = create<SelectedCollageState>(
+  (set, get) => ({
+    selectedCollage: new Map<string, ImagePosition>(),
+    setSelectedCollage: (items: Set<string>) => {
+      const newMap = new Map<string, ImagePosition>();
+      const currentMap = get().selectedCollage;
+
+      items.forEach((item) => {
+        if (currentMap.has(item)) {
+          newMap.set(item, currentMap.get(item)!);
+        } else {
+          newMap.set(item, generateImagePosition());
+        }
+      });
+
+      set({ selectedCollage: newMap });
+    },
+
+    regenerateAllPositions: () => {
+      const currentMap = get().selectedCollage;
+      const newMap = new Map<string, ImagePosition>();
+
+      currentMap.forEach((_, key) => {
+        newMap.set(key, generateImagePosition());
+      });
+
+      set({ selectedCollage: newMap });
+    },
+  })
+);

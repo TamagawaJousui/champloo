@@ -1,6 +1,6 @@
 import { useSelectedCollageStore } from "@/store/selectedCollageStore";
 import { useIdentityStore } from "@/store/userIdentityStore";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import { Toaster } from "react-hot-toast";
 import { useSelectedCollages } from "@/hooks/useStorage";
@@ -9,11 +9,10 @@ import { toastUploadWork } from "@/util/toast";
 
 export default function WorkCreate() {
   const { visitorId } = useIdentityStore();
-  const { selectedCollage } = useSelectedCollageStore();
+  const { selectedCollage, regenerateAllPositions } = useSelectedCollageStore();
 
   const { data: collageList, isLoading: isCollageListLoading } =
-    useSelectedCollages(selectedCollage);
-  const [reArrangeCount, setReArrangeCount] = useState(0);
+    useSelectedCollages(new Set(selectedCollage.keys()));
 
   const canvasEl = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
@@ -37,7 +36,7 @@ export default function WorkCreate() {
     return () => {
       canvas.dispose();
     };
-  }, [collageList, reArrangeCount]);
+  }, [collageList, selectedCollage]);
   return (
     <>
       <Toaster />
@@ -47,7 +46,7 @@ export default function WorkCreate() {
           <div
             className=" cursor-pointer select-none text-4xl"
             onClick={() => {
-              setReArrangeCount((prev) => prev + 1);
+              regenerateAllPositions();
             }}
           >
             🔁
