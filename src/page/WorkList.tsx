@@ -1,27 +1,17 @@
 import { useIdentityStore } from "@/store/userIdentityStore";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { getUserWorkList, getOtherWorkList } from "@/firebase/storage";
 import WorkItem from "@/component/WorkItem";
-import { Collage } from "@/model/Collage";
+import { useUserWorkList, useOtherWorkList } from "@/hooks/useStorage";
+import LoadingSpinner from "@/component/LoadingSpinner";
 
 export default function WorkList() {
   const { visitorId } = useIdentityStore();
 
-  const [userWorkList, setUserWorkList] = useState<Collage[]>([]);
-  const [otherWorkList, setOtherWorkList] = useState<Collage[]>([]);
-
-  useEffect(() => {
-    const fetchAllWorks = async () => {
-      const [userWorks, otherWorks] = await Promise.all([
-        getUserWorkList(visitorId),
-        getOtherWorkList(visitorId),
-      ]);
-      setUserWorkList(userWorks);
-      setOtherWorkList(otherWorks);
-    };
-
-    fetchAllWorks();
-  }, [visitorId]);
+  const { data: userWorkList, isLoading: isUserWorkListLoading } =
+    useUserWorkList(visitorId);
+  const { data: otherWorkList, isLoading: isOtherWorkListLoading } =
+    useOtherWorkList(visitorId);
 
   return (
     <>
@@ -31,7 +21,8 @@ export default function WorkList() {
           自分の作品
         </h2>
         <div className="relative flex flex-wrap gap-x-16 gap-y-12">
-          {userWorkList.map((work) => (
+          {isUserWorkListLoading && <LoadingSpinner />}
+          {userWorkList?.map((work) => (
             <WorkItem key={work.name} work={work} />
           ))}
         </div>
@@ -40,7 +31,8 @@ export default function WorkList() {
           他人の作品
         </h2>
         <div className="flex flex-wrap gap-x-16 gap-y-12">
-          {otherWorkList.map((work) => (
+          {isOtherWorkListLoading && <LoadingSpinner />}
+          {otherWorkList?.map((work) => (
             <WorkItem
               key={work.name}
               work={work}

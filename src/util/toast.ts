@@ -11,7 +11,7 @@ export const toastUploadCollage = async (visitorId: string, file: File) => {
   });
 };
 
-export const toastUploadWork = (
+export const toastUploadWork = async (
   canvas: fabric.Canvas | null,
   visitorId: string
 ) => {
